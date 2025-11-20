@@ -1,0 +1,152 @@
+Build a complete pediatric baby tracker SaaS-style web app using:
+- React
+- Tailwind CSS
+- React Router
+- A simple built-in database
+- Premium SaaS-level UI
+
+The app must include a beautiful SaaS landing page + all app pages.
+
+===========================================================
+🌟 1️⃣ SaaS-Level Landing Page (HIGH PRIORITY)
+===========================================================
+Create a modern, premium landing page like a real SaaS website.
+
+Style references:
+- Linear.app
+- Notion
+- Framer
+- Vercel
+- Calm pastel baby-care theme
+
+Sections required:
+1. **Hero Section**
+   - Big headline
+   - Subheadline
+   - Call to Action buttons (Get Started / Sign In)
+   - Soft baby-themed illustration or gradient
+   - Clean SaaS layout
+
+2. **Key Features Section** (3–4 cards)
+   - Vaccine Tracking
+   - Growth Tracking
+   - PDF Reports
+   - Pediatric AI Chatbot
+   Use pastel icons, rounded cards, soft shadows.
+
+3. **How It Works Section**
+   Step 1 → Create profile  
+   Step 2 → Track vaccines  
+   Step 3 → Monitor growth  
+   Step 4 → Ask AI Assistant
+
+4. **Testimonial Section**
+   - 2–3 simple placeholder testimonials  
+   - Baby-friendly theme  
+   - Rounded avatars
+
+5. **CTA Section**
+   - Big gradient box
+   - Button: “Create Account”
+
+6. **Footer**
+   - App name
+   - © Year
+   - Links: Login, Privacy, Terms
+
+Landing page must look like a professional SaaS product.
+
+===========================================================
+🌟 2️⃣ Authentication Pages
+===========================================================
+Login + Signup using built-in DB.
+After login → redirect to Dashboard.
+Store userId for data isolation.
+
+===========================================================
+🌟 3️⃣ Dashboard Page
+===========================================================
+Overview cards:
+- Baby name + photo
+- Upcoming vaccine
+- Pending vs Completed counts
+- Last height/weight
+- Mini growth chart preview
+
+Quick action buttons:
+- Add Vaccine
+- Add Growth Record
+- Open Chatbot
+
+Pastel theme + rounded cards.
+
+===========================================================
+🌟 4️⃣ Baby Profile Page
+===========================================================
+Fields: babyName, birthDate, gender, photoUrl.
+Editable clean card layout.
+
+===========================================================
+🌟 5️⃣ Vaccine Tracker Page
+===========================================================
+CRUD: Add / Edit / Delete
+Fields: vaccineName, dueDate, status (Pending, Completed)
+
+Badges:
+- Pending = yellow
+- Completed = green
+- Overdue = red (dueDate < today)
+- Due Today = blue
+
+Sort by due date.
+Cute icons + pastel cards.
+
+===========================================================
+🌟 6️⃣ Growth Tracker Page
+===========================================================
+Fields: date, height, weight
+
+Features:
+- Add entry
+- Table of entries
+- Dual-line chart (height and weight)
+- Button: “Download PDF”
+
+PDF includes:
+- Baby profile
+- Growth table
+- Growth chart
+
+===========================================================
+🌟 7️⃣ Chatbot Page
+===========================================================
+Bubble-style chat UI
+Gemini API (placeholder key)
+System prompt:
+“You are a friendly pediatric assistant.”
+
+===========================================================
+🌟 8️⃣ Navigation + Layout
+===========================================================
+Use:
+- React Router
+- Bottom nav bar (mobile-friendly)
+- Tabs: Dashboard, Profile, Vaccines, Growth, Chat
+
+===========================================================
+🌟 9️⃣ Database Requirements
+===========================================================
+Use the platform’s built-in DB.
+
+Collections:
+- users
+- baby_profile
+- vaccines
+- growth_records
+
+Every record must include userId.
+
+===========================================================
+Deliver all pages, components, Tailwind setup, routing,
+database functions, chatbot integration, and PDF feature.
+Keep UI modern, smooth, pastel, SaaS-quality.
