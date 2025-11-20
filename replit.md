@@ -8,8 +8,8 @@ BabyTrack is a comprehensive, premium SaaS web application designed for modern p
 - **Frontend**: Premium landing page, authentication, dashboard, baby profile, vaccine tracker, growth tracker, and AI chatbot
 - **Backend**: Full REST API with session-based authentication, CRUD operations, and Gemini AI integration
 - **Design System**: Implemented pastel baby-care color theme with Inter and Poppins fonts
-- **Authentication**: Session-based auth with protected routes and auth provider
-- **Data Persistence**: In-memory storage with proper session management using memorystore
+- **Authentication**: Session-based auth with protected routes and auth provider, added /api/auth/me endpoint
+- **Data Persistence**: Switched from in-memory to PostgreSQL database with Drizzle ORM
 - **PDF Generation**: Client-side PDF reports for growth tracking
 - **AI Integration**: Gemini-powered pediatric chatbot for parental guidance
 

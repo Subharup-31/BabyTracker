@@ -1,7 +1,8 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import session from "express-session";
-import createMemoryStore from "memorystore";
+import connectPgSimple from "connect-pg-simple";
+import { pool } from "./db";
 import { storage } from "./storage";
 import { insertUserSchema, insertBabyProfileSchema, insertVaccineSchema, insertGrowthRecordSchema } from "@shared/schema";
 import { getPediatricResponse } from "./gemini";
@@ -14,12 +15,13 @@ declare module "express-session" {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  const MemoryStore = createMemoryStore(session);
+  const PgStore = connectPgSimple(session);
   
   app.use(
     session({
-      store: new MemoryStore({
-        checkPeriod: 86400000,
+      store: new PgStore({
+        pool,
+        createTableIfMissing: true,
       }),
       secret: process.env.SESSION_SECRET || "baby-track-secret-key",
       resave: false,
@@ -160,32 +162,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/vaccines/:id", requireAuth, async (req, res) => {
     try {
       const { id } = req.params;
-      const existing = await storage.getVaccine(id);
-
-      if (!existing || existing.userId !== req.session.userId) {
-        return res.status(404).json({ message: "Vaccine not found" });
-      }
-
-      const vaccine = await storage.updateVaccine(id, req.body);
+      const vaccine = await storage.updateVaccine(id, {
+        ...req.body,
+        userId: req.session.userId!,
+      });
       res.json(vaccine);
     } catch (error: any) {
-      res.status(400).json({ message: error.message });
+      res.status(404).json({ message: error.message });
     }
   });
 
   app.delete("/api/vaccines/:id", requireAuth, async (req, res) => {
     try {
       const { id } = req.params;
-      const existing = await storage.getVaccine(id);
-
-      if (!existing || existing.userId !== req.session.userId) {
-        return res.status(404).json({ message: "Vaccine not found" });
-      }
-
-      await storage.deleteVaccine(id);
+      await storage.deleteVaccine(id, req.session.userId!);
       res.json({ message: "Deleted" });
     } catch (error: any) {
-      res.status(400).json({ message: error.message });
+      res.status(404).json({ message: error.message });
     }
   });
 
@@ -212,13 +205,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.patch("/api/growth-records/:id", requireAuth, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const record = await storage.updateGrowthRecord(id, {
+        ...req.body,
+        userId: req.session.userId!,
+      });
+      res.json(record);
+    } catch (error: any) {
+      res.status(404).json({ message: error.message });
+    }
+  });
+
   app.delete("/api/growth-records/:id", requireAuth, async (req, res) => {
     try {
       const { id } = req.params;
-      await storage.deleteGrowthRecord(id);
+      await storage.deleteGrowthRecord(id, req.session.userId!);
       res.json({ message: "Deleted" });
     } catch (error: any) {
-      res.status(400).json({ message: error.message });
+      res.status(404).json({ message: error.message });
     }
   });
 
