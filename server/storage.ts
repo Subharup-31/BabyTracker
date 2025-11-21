@@ -1,6 +1,4 @@
 import {
-  type User,
-  type InsertUser,
   type BabyProfile,
   type InsertBabyProfile,
   type Vaccine,
@@ -9,21 +7,10 @@ import {
   type InsertGrowthRecord,
   type ChatMessage,
   type InsertChatMessage,
-  users,
-  babyProfiles,
-  vaccines,
-  growthRecords,
-  chatMessages,
 } from "@shared/schema";
-import { randomUUID } from "crypto";
-import { db } from "./db";
-import { eq, and } from "drizzle-orm";
+import { supabase } from "./db";
 
 export interface IStorage {
-  getUser(id: string): Promise<User | undefined>;
-  getUserByUsername(username: string): Promise<User | undefined>;
-  createUser(user: InsertUser): Promise<User>;
-
   getBabyProfile(userId: string): Promise<BabyProfile | undefined>;
   createBabyProfile(profile: InsertBabyProfile): Promise<BabyProfile>;
   updateBabyProfile(userId: string, profile: Partial<BabyProfile>): Promise<BabyProfile>;
@@ -44,35 +31,16 @@ export interface IStorage {
 }
 
 export class MemStorage implements IStorage {
-  private users: Map<string, User>;
   private babyProfiles: Map<string, BabyProfile>;
   private vaccines: Map<string, Vaccine>;
   private growthRecords: Map<string, GrowthRecord>;
   private chatMessages: Map<string, ChatMessage>;
 
   constructor() {
-    this.users = new Map();
     this.babyProfiles = new Map();
     this.vaccines = new Map();
     this.growthRecords = new Map();
     this.chatMessages = new Map();
-  }
-
-  async getUser(id: string): Promise<User | undefined> {
-    return this.users.get(id);
-  }
-
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username
-    );
-  }
-
-  async createUser(insertUser: InsertUser): Promise<User> {
-    const id = randomUUID();
-    const user: User = { ...insertUser, id };
-    this.users.set(id, user);
-    return user;
   }
 
   async getBabyProfile(userId: string): Promise<BabyProfile | undefined> {
@@ -82,8 +50,13 @@ export class MemStorage implements IStorage {
   }
 
   async createBabyProfile(insertProfile: InsertBabyProfile): Promise<BabyProfile> {
-    const id = randomUUID();
-    const profile: BabyProfile = { ...insertProfile, id };
+    // Generate a random ID (in real implementation, Supabase would generate this)
+    const id = Math.random().toString(36).substring(2, 15);
+    const profile: BabyProfile = { 
+      ...insertProfile, 
+      id,
+      photoUrl: insertProfile.photoUrl ?? null
+    };
     this.babyProfiles.set(id, profile);
     return profile;
   }
@@ -112,7 +85,8 @@ export class MemStorage implements IStorage {
   }
 
   async createVaccine(insertVaccine: InsertVaccine): Promise<Vaccine> {
-    const id = randomUUID();
+    // Generate a random ID (in real implementation, Supabase would generate this)
+    const id = Math.random().toString(36).substring(2, 15);
     const vaccine: Vaccine = { ...insertVaccine, id };
     this.vaccines.set(id, vaccine);
     return vaccine;
@@ -139,7 +113,8 @@ export class MemStorage implements IStorage {
   }
 
   async createGrowthRecord(insertRecord: InsertGrowthRecord): Promise<GrowthRecord> {
-    const id = randomUUID();
+    // Generate a random ID (in real implementation, Supabase would generate this)
+    const id = Math.random().toString(36).substring(2, 15);
     const record: GrowthRecord = { ...insertRecord, id };
     this.growthRecords.set(id, record);
     return record;
@@ -166,140 +141,378 @@ export class MemStorage implements IStorage {
   }
 
   async createChatMessage(insertMessage: InsertChatMessage): Promise<ChatMessage> {
-    const id = randomUUID();
-    const message: ChatMessage = {
+    // Generate a random ID (in real implementation, Supabase would generate this)
+    const id = Math.random().toString(36).substring(2, 15);
+    const message: any = {
       ...insertMessage,
       id,
-      timestamp: new Date(),
+      timestamp: new Date().toISOString(),
     };
     this.chatMessages.set(id, message);
-    return message;
+    return message as ChatMessage;
   }
 }
 
 export class DatabaseStorage implements IStorage {
-  async getUser(id: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.id, id));
-    return user || undefined;
-  }
-
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.username, username));
-    return user || undefined;
-  }
-
-  async createUser(insertUser: InsertUser): Promise<User> {
-    const [user] = await db.insert(users).values(insertUser).returning();
-    return user;
-  }
-
   async getBabyProfile(userId: string): Promise<BabyProfile | undefined> {
-    const [profile] = await db.select().from(babyProfiles).where(eq(babyProfiles.userId, userId));
-    return profile || undefined;
+    const { data, error } = await supabase
+      .from('baby_profiles')
+      .select('*')
+      .eq('user_id', userId)
+      .single();
+
+    if (error) {
+      console.error('Error fetching baby profile:', error);
+      return undefined;
+    }
+    
+    if (!data) return undefined;
+    
+    // Map snake_case to camelCase
+    return {
+      id: data.id,
+      userId: data.user_id,
+      babyName: data.baby_name,
+      birthDate: data.birth_date,
+      gender: data.gender,
+      photoUrl: data.photo_url,
+    };
   }
 
   async createBabyProfile(insertProfile: InsertBabyProfile): Promise<BabyProfile> {
-    const [profile] = await db.insert(babyProfiles).values(insertProfile).returning();
-    return profile;
+    // Map camelCase to snake_case for database
+    const dbProfile = {
+      user_id: insertProfile.userId,
+      baby_name: insertProfile.babyName,
+      birth_date: insertProfile.birthDate,
+      gender: insertProfile.gender,
+      photo_url: insertProfile.photoUrl || null,
+    };
+
+    const { data, error } = await supabase
+      .from('baby_profiles')
+      .insert(dbProfile)
+      .select()
+      .single();
+
+    if (error) {
+      throw new Error(`Error creating baby profile: ${error.message}`);
+    }
+    
+    // Map snake_case to camelCase
+    return {
+      id: data.id,
+      userId: data.user_id,
+      babyName: data.baby_name,
+      birthDate: data.birth_date,
+      gender: data.gender,
+      photoUrl: data.photo_url,
+    };
   }
 
   async updateBabyProfile(userId: string, updates: Partial<BabyProfile>): Promise<BabyProfile> {
-    const [updated] = await db
-      .update(babyProfiles)
-      .set(updates)
-      .where(eq(babyProfiles.userId, userId))
-      .returning();
-    if (!updated) {
+    // Map camelCase to snake_case for database
+    const dbUpdates: any = {};
+    if (updates.babyName !== undefined) dbUpdates.baby_name = updates.babyName;
+    if (updates.birthDate !== undefined) dbUpdates.birth_date = updates.birthDate;
+    if (updates.gender !== undefined) dbUpdates.gender = updates.gender;
+    if (updates.photoUrl !== undefined) dbUpdates.photo_url = updates.photoUrl;
+
+    const { data, error } = await supabase
+      .from('baby_profiles')
+      .update(dbUpdates)
+      .eq('user_id', userId)
+      .select()
+      .single();
+
+    if (error) {
+      throw new Error(`Error updating baby profile: ${error.message}`);
+    }
+    
+    if (!data) {
       throw new Error("Profile not found");
     }
-    return updated;
+
+    // Map snake_case to camelCase
+    return {
+      id: data.id,
+      userId: data.user_id,
+      babyName: data.baby_name,
+      birthDate: data.birth_date,
+      gender: data.gender,
+      photoUrl: data.photo_url,
+    };
   }
 
   async getVaccines(userId: string): Promise<Vaccine[]> {
-    return await db.select().from(vaccines).where(eq(vaccines.userId, userId));
+    const { data, error } = await supabase
+      .from('vaccines')
+      .select('*')
+      .eq('user_id', userId);
+
+    if (error) {
+      throw new Error(`Error fetching vaccines: ${error.message}`);
+    }
+    
+    // Map snake_case to camelCase
+    return data.map(v => ({
+      id: v.id,
+      userId: v.user_id,
+      vaccineName: v.vaccine_name,
+      dueDate: v.due_date,
+      status: v.status,
+    }));
   }
 
   async getVaccine(id: string): Promise<Vaccine | undefined> {
-    const [vaccine] = await db.select().from(vaccines).where(eq(vaccines.id, id));
-    return vaccine || undefined;
+    const { data, error } = await supabase
+      .from('vaccines')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error) {
+      console.error('Error fetching vaccine:', error);
+      return undefined;
+    }
+    
+    if (!data) return undefined;
+    
+    // Map snake_case to camelCase
+    return {
+      id: data.id,
+      userId: data.user_id,
+      vaccineName: data.vaccine_name,
+      dueDate: data.due_date,
+      status: data.status,
+    };
   }
 
   async createVaccine(insertVaccine: InsertVaccine): Promise<Vaccine> {
-    const [vaccine] = await db.insert(vaccines).values(insertVaccine).returning();
-    return vaccine;
+    // Map camelCase to snake_case for database
+    const dbVaccine = {
+      user_id: insertVaccine.userId,
+      vaccine_name: insertVaccine.vaccineName,
+      due_date: insertVaccine.dueDate,
+      status: insertVaccine.status,
+    };
+
+    const { data, error } = await supabase
+      .from('vaccines')
+      .insert(dbVaccine)
+      .select()
+      .single();
+
+    if (error) {
+      throw new Error(`Error creating vaccine: ${error.message}`);
+    }
+    
+    // Map snake_case to camelCase
+    return {
+      id: data.id,
+      userId: data.user_id,
+      vaccineName: data.vaccine_name,
+      dueDate: data.due_date,
+      status: data.status,
+    };
   }
 
   async updateVaccine(id: string, updates: Partial<Vaccine>): Promise<Vaccine> {
     if (!updates.userId) {
       throw new Error("userId is required for security");
     }
-    const [updated] = await db
-      .update(vaccines)
-      .set(updates)
-      .where(and(eq(vaccines.id, id), eq(vaccines.userId, updates.userId)))
-      .returning();
-    if (!updated) {
+    
+    // Map camelCase to snake_case for database
+    const dbUpdates: any = {};
+    if (updates.vaccineName !== undefined) dbUpdates.vaccine_name = updates.vaccineName;
+    if (updates.dueDate !== undefined) dbUpdates.due_date = updates.dueDate;
+    if (updates.status !== undefined) dbUpdates.status = updates.status;
+
+    const { data, error } = await supabase
+      .from('vaccines')
+      .update(dbUpdates)
+      .eq('id', id)
+      .eq('user_id', updates.userId)
+      .select()
+      .single();
+
+    if (error) {
+      throw new Error(`Error updating vaccine: ${error.message}`);
+    }
+    
+    if (!data) {
       throw new Error("Vaccine not found or unauthorized");
     }
-    return updated;
+    
+    // Map snake_case to camelCase
+    return {
+      id: data.id,
+      userId: data.user_id,
+      vaccineName: data.vaccine_name,
+      dueDate: data.due_date,
+      status: data.status,
+    };
   }
 
   async deleteVaccine(id: string, userId: string): Promise<void> {
-    const result = await db
-      .delete(vaccines)
-      .where(and(eq(vaccines.id, id), eq(vaccines.userId, userId)))
-      .returning();
-    if (!result.length) {
-      throw new Error("Vaccine not found or unauthorized");
+    const { error } = await supabase
+      .from('vaccines')
+      .delete()
+      .eq('id', id)
+      .eq('user_id', userId);
+
+    if (error) {
+      throw new Error(`Error deleting vaccine: ${error.message}`);
     }
   }
 
   async getGrowthRecords(userId: string): Promise<GrowthRecord[]> {
-    return await db.select().from(growthRecords).where(eq(growthRecords.userId, userId));
+    const { data, error } = await supabase
+      .from('growth_records')
+      .select('*')
+      .eq('user_id', userId);
+
+    if (error) {
+      throw new Error(`Error fetching growth records: ${error.message}`);
+    }
+    
+    // Map snake_case to camelCase
+    return data.map(r => ({
+      id: r.id,
+      userId: r.user_id,
+      date: r.date,
+      height: r.height,
+      weight: r.weight,
+    }));
   }
 
   async createGrowthRecord(insertRecord: InsertGrowthRecord): Promise<GrowthRecord> {
-    const [record] = await db.insert(growthRecords).values(insertRecord).returning();
-    return record;
+    // Map camelCase to snake_case for database
+    const dbRecord = {
+      user_id: insertRecord.userId,
+      date: insertRecord.date,
+      height: insertRecord.height,
+      weight: insertRecord.weight,
+    };
+
+    const { data, error } = await supabase
+      .from('growth_records')
+      .insert(dbRecord)
+      .select()
+      .single();
+
+    if (error) {
+      throw new Error(`Error creating growth record: ${error.message}`);
+    }
+    
+    // Map snake_case to camelCase
+    return {
+      id: data.id,
+      userId: data.user_id,
+      date: data.date,
+      height: data.height,
+      weight: data.weight,
+    };
   }
 
   async updateGrowthRecord(id: string, updates: Partial<GrowthRecord>): Promise<GrowthRecord> {
     if (!updates.userId) {
       throw new Error("userId is required for security");
     }
-    const [updated] = await db
-      .update(growthRecords)
-      .set(updates)
-      .where(and(eq(growthRecords.id, id), eq(growthRecords.userId, updates.userId)))
-      .returning();
-    if (!updated) {
+    
+    // Map camelCase to snake_case for database
+    const dbUpdates: any = {};
+    if (updates.date !== undefined) dbUpdates.date = updates.date;
+    if (updates.height !== undefined) dbUpdates.height = updates.height;
+    if (updates.weight !== undefined) dbUpdates.weight = updates.weight;
+
+    const { data, error } = await supabase
+      .from('growth_records')
+      .update(dbUpdates)
+      .eq('id', id)
+      .eq('user_id', updates.userId)
+      .select()
+      .single();
+
+    if (error) {
+      throw new Error(`Error updating growth record: ${error.message}`);
+    }
+    
+    if (!data) {
       throw new Error("Growth record not found or unauthorized");
     }
-    return updated;
+    
+    // Map snake_case to camelCase
+    return {
+      id: data.id,
+      userId: data.user_id,
+      date: data.date,
+      height: data.height,
+      weight: data.weight,
+    };
   }
 
   async deleteGrowthRecord(id: string, userId: string): Promise<void> {
-    const result = await db
-      .delete(growthRecords)
-      .where(and(eq(growthRecords.id, id), eq(growthRecords.userId, userId)))
-      .returning();
-    if (!result.length) {
-      throw new Error("Growth record not found or unauthorized");
+    const { error } = await supabase
+      .from('growth_records')
+      .delete()
+      .eq('id', id)
+      .eq('user_id', userId);
+
+    if (error) {
+      throw new Error(`Error deleting growth record: ${error.message}`);
     }
   }
 
   async getChatMessages(userId: string): Promise<ChatMessage[]> {
-    return await db
-      .select()
-      .from(chatMessages)
-      .where(eq(chatMessages.userId, userId))
-      .orderBy(chatMessages.timestamp);
+    const { data, error } = await supabase
+      .from('chat_messages')
+      .select('*')
+      .eq('user_id', userId)
+      .order('timestamp', { ascending: true });
+
+    if (error) {
+      throw new Error(`Error fetching chat messages: ${error.message}`);
+    }
+    
+    // Map snake_case to camelCase
+    return data.map(m => ({
+      id: m.id,
+      userId: m.user_id,
+      role: m.role,
+      content: m.content,
+      timestamp: m.timestamp,
+    }));
   }
 
   async createChatMessage(insertMessage: InsertChatMessage): Promise<ChatMessage> {
-    const [message] = await db.insert(chatMessages).values(insertMessage).returning();
-    return message;
+    // Map camelCase to snake_case for database
+    const dbMessage = {
+      user_id: insertMessage.userId,
+      role: insertMessage.role,
+      content: insertMessage.content,
+    };
+
+    const { data, error } = await supabase
+      .from('chat_messages')
+      .insert(dbMessage)
+      .select()
+      .single();
+
+    if (error) {
+      throw new Error(`Error creating chat message: ${error.message}`);
+    }
+    
+    // Map snake_case to camelCase
+    return {
+      id: data.id,
+      userId: data.user_id,
+      role: data.role,
+      content: data.content,
+      timestamp: data.timestamp,
+    };
   }
 }
 
+// Export the Supabase storage implementation
 export const storage = new DatabaseStorage();

@@ -20,8 +20,11 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsi
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
-const growthFormSchema = insertGrowthRecordSchema.extend({
+const growthFormSchema = z.object({
   date: z.string().min(1, "Date is required"),
+  height: z.number().positive("Height must be greater than 0"),
+  weight: z.number().positive("Weight must be greater than 0"),
+  userId: z.string().optional(),
 });
 
 type GrowthFormValues = z.infer<typeof growthFormSchema>;
@@ -42,8 +45,8 @@ export default function GrowthPage() {
     resolver: zodResolver(growthFormSchema),
     defaultValues: {
       date: new Date().toISOString().split("T")[0],
-      height: 0,
-      weight: 0,
+      height: undefined,
+      weight: undefined,
       userId: "",
     },
   });
@@ -178,7 +181,8 @@ export default function GrowthPage() {
                             type="number"
                             placeholder="e.g., 55"
                             {...field}
-                            onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                            value={field.value || ""}
+                            onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
                             data-testid="input-height"
                           />
                         </FormControl>
@@ -192,13 +196,14 @@ export default function GrowthPage() {
                     name="weight"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Weight (grams)</FormLabel>
+                        <FormLabel>Weight (kg)</FormLabel>
                         <FormControl>
                           <Input
                             type="number"
-                            placeholder="e.g., 3500"
-                            {...field}
-                            onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                            step="0.1"
+                            placeholder="e.g., 3.5"
+                            value={field.value ? (field.value / 1000).toString() : ""}
+                            onChange={(e) => field.onChange(e.target.value ? Math.round(parseFloat(e.target.value) * 1000) : undefined)}
                             data-testid="input-weight"
                           />
                         </FormControl>

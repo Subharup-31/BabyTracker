@@ -14,6 +14,7 @@ import ProfilePage from "@/pages/profile";
 import VaccinesPage from "@/pages/vaccines";
 import GrowthPage from "@/pages/growth";
 import ChatPage from "@/pages/chat";
+import AdminPage from "@/pages/admin";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -60,6 +61,12 @@ function Router() {
           <AppLayout>
             <ChatPage />
           </AppLayout>
+        </ProtectedRoute>
+      </Route>
+      
+      <Route path="/admin">
+        <ProtectedRoute>
+          <AdminPage />
         </ProtectedRoute>
       </Route>
       

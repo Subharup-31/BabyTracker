@@ -24,6 +24,7 @@ type ProfileFormValues = z.infer<typeof profileFormSchema>;
 export default function ProfilePage() {
   const { toast } = useToast();
   const [photoPreview, setPhotoPreview] = useState<string>("");
+  const fileInputRef = useState<HTMLInputElement | null>(null);
 
   const { data: profile, isLoading } = useQuery<BabyProfile>({
     queryKey: ["/api/baby-profile"],
@@ -36,16 +37,20 @@ export default function ProfilePage() {
       birthDate: profile?.birthDate || "",
       gender: profile?.gender || "Male",
       photoUrl: profile?.photoUrl || "",
+      bloodGroup: profile?.bloodGroup || "",
+      contactNumber: profile?.contactNumber || "",
       userId: "",
     },
   });
 
   const mutation = useMutation({
     mutationFn: async (data: ProfileFormValues) => {
+      // Remove userId from the data - backend will use the authenticated user's ID
+      const { userId, ...profileData } = data;
       if (profile) {
-        return apiRequest("PUT", "/api/baby-profile", data);
+        return apiRequest("PUT", "/api/baby-profile", profileData);
       } else {
-        return apiRequest("POST", "/api/baby-profile", data);
+        return apiRequest("POST", "/api/baby-profile", profileData);
       }
     },
     onSuccess: () => {
@@ -63,6 +68,19 @@ export default function ProfilePage() {
       });
     },
   });
+
+  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const result = reader.result as string;
+        setPhotoPreview(result);
+        form.setValue("photoUrl", result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   const onSubmit = (data: ProfileFormValues) => {
     mutation.mutate(data);
@@ -87,20 +105,22 @@ export default function ProfilePage() {
       birthDate: profile.birthDate,
       gender: profile.gender,
       photoUrl: profile.photoUrl || "",
+      bloodGroup: profile.bloodGroup || "",
+      contactNumber: profile.contactNumber || "",
       userId: profile.userId,
     });
   }
 
   return (
-    <div className="space-y-6">
-      <div>
+    <div className="space-y-6 max-w-2xl mx-auto">
+      <div className="text-center">
         <h1 className="text-3xl font-bold font-[Poppins] text-foreground">Baby Profile</h1>
         <p className="text-muted-foreground mt-1">
           Manage your baby's information and photo
         </p>
       </div>
 
-      <Card className="max-w-2xl">
+      <Card>
         <CardHeader>
           <CardTitle className="font-[Poppins]">
             {profile ? "Edit Profile" : "Create Profile"}
@@ -114,6 +134,13 @@ export default function ProfilePage() {
         <CardContent>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              <input
+                type="file"
+                ref={(ref) => fileInputRef[1](ref)}
+                onChange={handlePhotoUpload}
+                accept="image/*"
+                className="hidden"
+              />
               <div className="flex justify-center mb-6">
                 <div className="relative">
                   <Avatar className="w-32 h-32">
@@ -126,7 +153,8 @@ export default function ProfilePage() {
                     type="button"
                     size="icon"
                     variant="secondary"
-                    className="absolute bottom-0 right-0 rounded-full"
+                    className="absolute bottom-0 right-0 rounded-full shadow-md"
+                    onClick={() => fileInputRef[0]?.click()}
                     data-testid="button-upload-photo"
                   >
                     <Upload className="w-4 h-4" />
@@ -187,15 +215,45 @@ export default function ProfilePage() {
 
               <FormField
                 control={form.control}
-                name="photoUrl"
+                name="bloodGroup"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Photo URL (optional)</FormLabel>
+                    <FormLabel>Blood Group (optional)</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger data-testid="select-blood-group">
+                          <SelectValue placeholder="Select blood group" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="A+">A+</SelectItem>
+                        <SelectItem value="A-">A-</SelectItem>
+                        <SelectItem value="B+">B+</SelectItem>
+                        <SelectItem value="B-">B-</SelectItem>
+                        <SelectItem value="AB+">AB+</SelectItem>
+                        <SelectItem value="AB-">AB-</SelectItem>
+                        <SelectItem value="O+">O+</SelectItem>
+                        <SelectItem value="O-">O-</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="contactNumber"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Contact Number (optional)</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="https://example.com/photo.jpg"
+                        type="tel"
+                        placeholder="Enter contact number"
                         {...field}
-                        data-testid="input-photo-url"
+                        value={field.value || ""}
+                        data-testid="input-contact-number"
                       />
                     </FormControl>
                     <FormMessage />

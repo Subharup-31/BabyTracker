@@ -18,7 +18,7 @@ Remember: You're here to support and inform parents, not replace professional me
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-2.0-flash-exp",
+      model: "gemini-2.5-flash",
       config: {
         systemInstruction: systemPrompt,
       },
@@ -26,8 +26,19 @@ Remember: You're here to support and inform parents, not replace professional me
     });
 
     return response.text || "I'm sorry, I couldn't generate a response. Please try again.";
-  } catch (error) {
+  } catch (error: any) {
     console.error("Gemini API error:", error);
+    
+    // Handle quota exceeded errors
+    if (error.status === 429) {
+      throw new Error("AI service quota exceeded. Please try again in a few minutes or check your Gemini API billing settings.");
+    }
+    
+    // Handle other API errors
+    if (error.status) {
+      throw new Error(`AI service error (${error.status}). Please try again later.`);
+    }
+    
     throw new Error("Failed to get AI response. Please try again later.");
   }
 }

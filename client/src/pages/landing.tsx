@@ -41,45 +41,89 @@ export default function LandingPage() {
       </header>
 
       {/* Hero Section */}
-      <section className="relative min-h-[85vh] flex items-center overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-secondary/5 to-accent/5"></div>
-        <div className="max-w-7xl mx-auto px-6 py-20 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center relative z-10">
-          <div className="space-y-8">
+      <section className="relative min-h-[90vh] flex items-center overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-background to-secondary/5"></div>
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,rgba(var(--primary-rgb,59,130,246),0.1),transparent_50%)]"></div>
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_50%,rgba(var(--secondary-rgb,236,72,153),0.1),transparent_50%)]"></div>
+        
+        <div className="max-w-7xl mx-auto px-6 py-20 relative z-10">
+          <div className="text-center space-y-8 max-w-4xl mx-auto">
+            <div className="inline-block">
+              <span className="px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium border border-primary/20">
+                ✨ SYSTEM V1.0 LIVE
+              </span>
+            </div>
+            
             <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold font-[Poppins] text-foreground leading-tight">
-              Track Your Baby's Journey with Love
+              Track Your Baby's Health with{" "}
+              <span className="bg-gradient-to-r from-cyan-500 via-blue-600 to-indigo-600 bg-clip-text text-transparent animate-gradient bg-[length:200%_auto]">
+                Intelligence & Ease
+              </span>
             </h1>
-            <p className="text-xl text-muted-foreground leading-relaxed">
-              Monitor vaccines, growth milestones, and get AI-powered pediatric guidance—all in one beautiful, easy-to-use platform built for modern parents.
+            
+            <p className="text-xl md:text-2xl text-muted-foreground leading-relaxed max-w-3xl mx-auto">
+              The BabyTrack System simplifies tracking vaccines, monitoring growth, and managing health data—all in one secure platform.
             </p>
-            <div className="flex flex-wrap gap-4">
+            
+            <div className="flex flex-wrap gap-4 justify-center pt-4">
               <Link href="/signup">
-                <Button size="lg" className="text-lg px-8 py-6" data-testid="button-hero-get-started">
+                <Button size="lg" className="text-lg px-8 py-6 shadow-lg shadow-primary/25 hover:shadow-2xl hover:shadow-primary/50 hover:scale-105 transition-all duration-300" data-testid="button-hero-get-started">
                   Get Started Free
                   <ArrowRight className="ml-2 w-5 h-5" />
                 </Button>
               </Link>
               <Link href="/login">
-                <Button size="lg" variant="outline" className="text-lg px-8 py-6" data-testid="button-hero-sign-in">
-                  Sign In
+                <Button size="lg" variant="outline" className="text-lg px-8 py-6 hover:scale-105 transition-transform duration-200" data-testid="button-hero-sign-in">
+                  Parent Portal
                 </Button>
               </Link>
             </div>
           </div>
-          <div className="relative">
-            <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-secondary/20 rounded-3xl blur-3xl"></div>
-            <img
-              src={heroImage}
-              alt="Parent using BabyTrack app with baby"
-              className="relative rounded-3xl shadow-2xl w-full"
-            />
+          
+          {/* Dashboard Preview */}
+          <div className="mt-20 relative">
+            <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent z-10"></div>
+            <div className="relative rounded-2xl border border-border shadow-2xl overflow-hidden bg-card">
+              <img
+                src={heroImage}
+                alt="BabyTrack Dashboard Preview"
+                className="w-full h-auto"
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Stats Section */}
+      <section className="py-16 border-y border-border bg-muted/30">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+            {[
+              { label: "Active Parents", value: "10K+", color: "text-blue-600" },
+              { label: "Vaccines Tracked", value: "50K+", color: "text-cyan-600" },
+              { label: "Growth Records", value: "100K+", color: "text-indigo-600" },
+              { label: "AI Consultations", value: "25K+", color: "text-purple-600" }
+            ].map((stat) => (
+              <div key={stat.label} className="text-center space-y-2">
+                <div className={`text-4xl md:text-5xl font-bold font-[Poppins] ${stat.color}`}>
+                  {stat.value}
+                </div>
+                <div className="text-sm text-muted-foreground uppercase tracking-wide">
+                  {stat.label}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
       {/* Features Section */}
-      <section className="py-24 bg-muted/30">
+      <section className="py-24">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-16 space-y-4">
+            <div className="inline-block px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium border border-primary/20 mb-4">
+              FEATURES
+            </div>
             <h2 className="text-4xl md:text-5xl font-bold font-[Poppins] text-foreground">
               Everything You Need in One Place
             </h2>
@@ -87,51 +131,51 @@ export default function LandingPage() {
               Comprehensive tools designed to make parenting easier and more organized
             </p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            <Card className="hover-elevate transition-all duration-300">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <Card className="border-2 hover:border-blue-500/50 transition-all duration-300 hover:shadow-lg">
               <CardContent className="p-8 space-y-4">
-                <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center">
-                  <Calendar className="w-8 h-8 text-primary" />
+                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
+                  <Calendar className="w-7 h-7 text-white" />
                 </div>
-                <h3 className="text-xl font-semibold font-[Poppins] text-card-foreground">Vaccine Tracking</h3>
-                <p className="text-muted-foreground leading-relaxed">
-                  Never miss a vaccination date. Track upcoming, completed, and overdue vaccines with color-coded reminders.
+                <h3 className="text-xl font-semibold font-[Poppins] text-card-foreground">Vaccine Dashboard</h3>
+                <p className="text-muted-foreground leading-relaxed text-sm">
+                  Track upcoming, completed, and overdue vaccines with intelligent color-coded reminders and notifications.
                 </p>
               </CardContent>
             </Card>
 
-            <Card className="hover-elevate transition-all duration-300">
+            <Card className="border-2 hover:border-cyan-500/50 transition-all duration-300 hover:shadow-lg">
               <CardContent className="p-8 space-y-4">
-                <div className="w-16 h-16 rounded-2xl bg-secondary/10 flex items-center justify-center">
-                  <Baby className="w-8 h-8 text-secondary-foreground" />
+                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-cyan-500 to-cyan-600 flex items-center justify-center">
+                  <Baby className="w-7 h-7 text-white" />
                 </div>
-                <h3 className="text-xl font-semibold font-[Poppins] text-card-foreground">Growth Monitoring</h3>
-                <p className="text-muted-foreground leading-relaxed">
-                  Record height and weight measurements and visualize your baby's growth with beautiful interactive charts.
+                <h3 className="text-xl font-semibold font-[Poppins] text-card-foreground">Growth Analytics</h3>
+                <p className="text-muted-foreground leading-relaxed text-sm">
+                  Monitor height and weight with interactive charts and visual insights into your baby's development.
                 </p>
               </CardContent>
             </Card>
 
-            <Card className="hover-elevate transition-all duration-300">
+            <Card className="border-2 hover:border-indigo-500/50 transition-all duration-300 hover:shadow-lg">
               <CardContent className="p-8 space-y-4">
-                <div className="w-16 h-16 rounded-2xl bg-accent/10 flex items-center justify-center">
-                  <FileText className="w-8 h-8 text-accent-foreground" />
+                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-600 flex items-center justify-center">
+                  <FileText className="w-7 h-7 text-white" />
                 </div>
-                <h3 className="text-xl font-semibold font-[Poppins] text-card-foreground">PDF Reports</h3>
-                <p className="text-muted-foreground leading-relaxed">
-                  Generate professional PDF reports of your baby's profile, growth data, and vaccination history to share with doctors.
+                <h3 className="text-xl font-semibold font-[Poppins] text-card-foreground">Export Reports</h3>
+                <p className="text-muted-foreground leading-relaxed text-sm">
+                  Generate professional PDF reports to share with pediatricians and keep offline records.
                 </p>
               </CardContent>
             </Card>
 
-            <Card className="hover-elevate transition-all duration-300">
+            <Card className="border-2 hover:border-purple-500/50 transition-all duration-300 hover:shadow-lg">
               <CardContent className="p-8 space-y-4">
-                <div className="w-16 h-16 rounded-2xl bg-chart-2/10 flex items-center justify-center">
-                  <MessageCircle className="w-8 h-8 text-chart-2" />
+                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center">
+                  <MessageCircle className="w-7 h-7 text-white" />
                 </div>
-                <h3 className="text-xl font-semibold font-[Poppins] text-card-foreground">AI Pediatric Assistant</h3>
-                <p className="text-muted-foreground leading-relaxed">
-                  Get instant answers to your baby health questions with our friendly AI-powered pediatric chatbot.
+                <h3 className="text-xl font-semibold font-[Poppins] text-card-foreground">AI Assistant</h3>
+                <p className="text-muted-foreground leading-relaxed text-sm">
+                  Get instant pediatric guidance 24/7 with our AI-powered chatbot trained on medical knowledge.
                 </p>
               </CardContent>
             </Card>
@@ -241,27 +285,42 @@ export default function LandingPage() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-24">
-        <div className="max-w-4xl mx-auto px-6">
-          <Card className="bg-gradient-to-br from-primary via-primary/90 to-primary/80 border-0 text-primary-foreground">
-            <CardContent className="p-12 text-center space-y-8">
-              <h2 className="text-4xl md:text-5xl font-bold font-[Poppins]">
-                Start Tracking Today
+      <section className="py-24 relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-secondary/10 to-accent/10"></div>
+        <div className="max-w-5xl mx-auto px-6 relative z-10">
+          <Card className="border-2 border-primary/20 shadow-2xl overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-background to-secondary/5"></div>
+            <CardContent className="p-12 md:p-16 text-center space-y-8 relative z-10">
+              <div className="inline-block px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium border border-primary/20 mb-4">
+                GET STARTED TODAY
+              </div>
+              <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold font-[Poppins] text-foreground">
+                Ready to Track Your Baby's Journey?
               </h2>
-              <p className="text-xl text-primary-foreground/90 max-w-2xl mx-auto">
-                Join thousands of parents who trust BabyTrack to keep their little ones healthy and happy.
+              <p className="text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
+                Join thousands of parents who trust BabyTrack to keep their little ones healthy and happy. Start free, no credit card required.
               </p>
-              <Link href="/signup">
-                <Button
-                  size="lg"
-                  variant="secondary"
-                  className="text-lg px-8 py-6"
-                  data-testid="button-cta-create-account"
-                >
-                  Create Free Account
-                  <ArrowRight className="ml-2 w-5 h-5" />
-                </Button>
-              </Link>
+              <div className="flex flex-wrap gap-4 justify-center pt-4">
+                <Link href="/signup">
+                  <Button
+                    size="lg"
+                    className="text-lg px-10 py-7 shadow-lg shadow-primary/25"
+                    data-testid="button-cta-create-account"
+                  >
+                    Create Free Account
+                    <ArrowRight className="ml-2 w-5 h-5" />
+                  </Button>
+                </Link>
+                <Link href="/login">
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    className="text-lg px-10 py-7"
+                  >
+                    Sign In
+                  </Button>
+                </Link>
+              </div>
             </CardContent>
           </Card>
         </div>

@@ -6,7 +6,6 @@ export function BottomNav() {
 
   const navItems = [
     { href: "/dashboard", icon: Home, label: "Home", testId: "nav-dashboard" },
-    { href: "/profile", icon: User, label: "Profile", testId: "nav-profile" },
     { href: "/vaccines", icon: Calendar, label: "Vaccines", testId: "nav-vaccines" },
     { href: "/growth", icon: TrendingUp, label: "Growth", testId: "nav-growth" },
     { href: "/chat", icon: MessageCircle, label: "Chat", testId: "nav-chat" },

@@ -1,80 +1,82 @@
-import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, timestamp, integer, date } from "drizzle-orm/pg-core";
-import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-export const users = pgTable("users", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  username: text("username").notNull().unique(),
-  password: text("password").notNull(),
+// Baby Profile schema for Supabase
+export const insertBabyProfileSchema = z.object({
+  userId: z.string(),
+  babyName: z.string().min(1, "Baby name is required"),
+  birthDate: z.string(), // Date as ISO string
+  gender: z.string().min(1, "Gender is required"),
+  photoUrl: z.string().nullable().optional(),
+  bloodGroup: z.string().optional(),
+  contactNumber: z.string().optional(),
 });
 
-export const insertUserSchema = createInsertSchema(users).pick({
-  username: true,
-  password: true,
-});
-
-export type InsertUser = z.infer<typeof insertUserSchema>;
-export type User = typeof users.$inferSelect;
-
-export const babyProfiles = pgTable("baby_profiles", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id").notNull(),
-  babyName: text("baby_name").notNull(),
-  birthDate: date("birth_date").notNull(),
-  gender: text("gender").notNull(),
-  photoUrl: text("photo_url"),
-});
-
-export const insertBabyProfileSchema = createInsertSchema(babyProfiles).omit({
-  id: true,
+export const babyProfileSchema = z.object({
+  id: z.string(),
+  userId: z.string(),
+  babyName: z.string(),
+  birthDate: z.string(),
+  gender: z.string(),
+  photoUrl: z.string().nullable(),
+  bloodGroup: z.string().nullable(),
+  contactNumber: z.string().nullable(),
 });
 
 export type InsertBabyProfile = z.infer<typeof insertBabyProfileSchema>;
-export type BabyProfile = typeof babyProfiles.$inferSelect;
+export type BabyProfile = z.infer<typeof babyProfileSchema>;
 
-export const vaccines = pgTable("vaccines", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id").notNull(),
-  vaccineName: text("vaccine_name").notNull(),
-  dueDate: date("due_date").notNull(),
-  status: text("status").notNull(),
+// Vaccine schema for Supabase
+export const insertVaccineSchema = z.object({
+  userId: z.string(),
+  vaccineName: z.string().min(1, "Vaccine name is required"),
+  dueDate: z.string(), // Date as ISO string
+  status: z.string().min(1, "Status is required"),
 });
 
-export const insertVaccineSchema = createInsertSchema(vaccines).omit({
-  id: true,
+export const vaccineSchema = z.object({
+  id: z.string(),
+  userId: z.string(),
+  vaccineName: z.string(),
+  dueDate: z.string(),
+  status: z.string(),
 });
 
 export type InsertVaccine = z.infer<typeof insertVaccineSchema>;
-export type Vaccine = typeof vaccines.$inferSelect;
+export type Vaccine = z.infer<typeof vaccineSchema>;
 
-export const growthRecords = pgTable("growth_records", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id").notNull(),
-  date: date("date").notNull(),
-  height: integer("height").notNull(),
-  weight: integer("weight").notNull(),
+// Growth Record schema for Supabase
+export const insertGrowthRecordSchema = z.object({
+  userId: z.string(),
+  date: z.string(), // Date as ISO string
+  height: z.number().int().positive(),
+  weight: z.number().int().positive(),
 });
 
-export const insertGrowthRecordSchema = createInsertSchema(growthRecords).omit({
-  id: true,
+export const growthRecordSchema = z.object({
+  id: z.string(),
+  userId: z.string(),
+  date: z.string(),
+  height: z.number(),
+  weight: z.number(),
 });
 
 export type InsertGrowthRecord = z.infer<typeof insertGrowthRecordSchema>;
-export type GrowthRecord = typeof growthRecords.$inferSelect;
+export type GrowthRecord = z.infer<typeof growthRecordSchema>;
 
-export const chatMessages = pgTable("chat_messages", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id").notNull(),
-  role: text("role").notNull(),
-  content: text("content").notNull(),
-  timestamp: timestamp("timestamp").notNull().defaultNow(),
+// Chat Message schema for Supabase
+export const insertChatMessageSchema = z.object({
+  userId: z.string(),
+  role: z.string().min(1, "Role is required"),
+  content: z.string().min(1, "Content is required"),
 });
 
-export const insertChatMessageSchema = createInsertSchema(chatMessages).omit({
-  id: true,
-  timestamp: true,
+export const chatMessageSchema = z.object({
+  id: z.string(),
+  userId: z.string(),
+  role: z.string(),
+  content: z.string(),
+  timestamp: z.string(), // ISO string from Supabase
 });
 
 export type InsertChatMessage = z.infer<typeof insertChatMessageSchema>;
-export type ChatMessage = typeof chatMessages.$inferSelect;
+export type ChatMessage = z.infer<typeof chatMessageSchema>;

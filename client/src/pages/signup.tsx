@@ -1,19 +1,19 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { Baby, Moon, Sun } from "lucide-react";
+import { Baby, Moon, Sun, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useTheme } from "@/components/ThemeProvider";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 
 export default function SignupPage() {
   const { theme, toggleTheme } = useTheme();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -33,12 +33,19 @@ export default function SignupPage() {
     setIsLoading(true);
 
     try {
-      await apiRequest("POST", "/api/auth/signup", { username, password });
+      const response: any = await apiRequest("POST", "/api/auth/signup", { email, password });
+      // Store the session token
+      if (response.session?.access_token) {
+        localStorage.setItem('supabase_token', response.session.access_token);
+      }
       toast({
         title: "Account created!",
-        description: "Welcome to BabyTrack. You've been automatically signed in.",
+        description: response.message || "Welcome to BabyTrack. You've been automatically signed in.",
       });
-      setLocation("/dashboard");
+      // Set the auth data directly in the cache
+      queryClient.setQueryData(["/api/auth/me"], { userId: response.user.id });
+      // Force navigation
+      window.location.href = "/dashboard";
     } catch (error: any) {
       toast({
         title: "Signup failed",
@@ -51,8 +58,20 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-6">
-      <div className="absolute top-6 right-6">
+    <div className="min-h-screen bg-background relative">
+      <div className="absolute top-6 left-6 z-10">
+        <Link href="/">
+          <Button
+            size="icon"
+            variant="ghost"
+            data-testid="button-back"
+            aria-label="Back to home"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </Button>
+        </Link>
+      </div>
+      <div className="absolute top-6 right-6 z-10">
         <Button
           size="icon"
           variant="ghost"
@@ -64,17 +83,18 @@ export default function SignupPage() {
         </Button>
       </div>
 
-      <div className="w-full max-w-md space-y-8">
-        <div className="text-center space-y-2">
-          <Link href="/">
-            <div className="inline-flex items-center gap-2 mb-6 cursor-pointer">
-              <Baby className="w-10 h-10 text-primary" />
-              <span className="text-3xl font-bold font-[Poppins] text-foreground">BabyTrack</span>
-            </div>
-          </Link>
-        </div>
+      <div className="min-h-screen flex items-center justify-center p-6">
+        <div className="w-full max-w-md space-y-8">
+          <div className="text-center space-y-2">
+            <Link href="/">
+              <div className="inline-flex items-center gap-2 mb-6 cursor-pointer">
+                <Baby className="w-10 h-10 text-primary" />
+                <span className="text-3xl font-bold font-[Poppins] text-foreground">BabyTrack</span>
+              </div>
+            </Link>
+          </div>
 
-        <Card>
+          <Card>
           <CardHeader className="space-y-2">
             <CardTitle className="text-2xl font-[Poppins]">Create Your Account</CardTitle>
             <CardDescription>Start tracking your baby's health journey today</CardDescription>
@@ -82,15 +102,15 @@ export default function SignupPage() {
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-2">
-                <Label htmlFor="username">Username</Label>
+                <Label htmlFor="email">Email</Label>
                 <Input
-                  id="username"
-                  type="text"
-                  placeholder="Choose a username"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
+                  id="email"
+                  type="email"
+                  placeholder="Enter your email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   required
-                  data-testid="input-username"
+                  data-testid="input-email"
                 />
               </div>
               <div className="space-y-2">
@@ -139,6 +159,7 @@ export default function SignupPage() {
             </div>
           </CardContent>
         </Card>
+        </div>
       </div>
     </div>
   );
