@@ -2,7 +2,7 @@ import type { Express, Request } from "express";
 import { createServer, type Server } from "http";
 import { supabase, createUserSupabaseClient } from "./db";
 import { storage } from "./storage";
-import { insertBabyProfileSchema, insertVaccineSchema, insertGrowthRecordSchema } from "@shared/schema";
+import { insertBabyProfileSchema, insertVaccineSchema, insertGrowthRecordSchema, insertFeedbackSchema } from "@shared/schema";
 import { getPediatricResponse } from "./gemini";
 import { registerAdminRoutes } from "./admin-routes";
 
@@ -383,6 +383,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       res.json({ userMessage, aiMessage });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Feedback routes
+  app.post("/api/feedback", requireAuth, async (req, res) => {
+    try {
+      const feedbackData = insertFeedbackSchema.parse({
+        ...req.body,
+        userId: req.userId,
+      });
+
+      const feedback = await storage.createFeedback(feedbackData);
+      res.json(feedback);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/feedback", requireAuth, async (req, res) => {
+    try {
+      const feedbacks = await storage.getUserFeedbacks(req.userId!);
+      res.json(feedbacks);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Test endpoint to manually trigger vaccine reminder check
+  app.post("/api/test/vaccine-reminders", requireAuth, async (req, res) => {
+    try {
+      const { checkAndSendVaccineReminders } = await import("./vaccine-reminder");
+      await checkAndSendVaccineReminders();
+      res.json({ message: "Vaccine reminder check completed. Check server logs for details." });
     } catch (error: any) {
       res.status(500).json({ message: error.message });
     }

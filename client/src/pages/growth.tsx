@@ -90,37 +90,139 @@ export default function GrowthPage() {
 
   const generatePDF = () => {
     const doc = new jsPDF();
+    let yPosition = 15;
 
-    doc.setFontSize(20);
-    doc.text("Growth Report", 14, 22);
+    // BabyTrack Header
+    doc.setFontSize(26);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(59, 130, 246); // Blue color
+    doc.text("BabyTrack", 14, yPosition);
+    yPosition += 10;
 
+    // Title
+    doc.setFontSize(22);
+    doc.setTextColor(0, 0, 0); // Black color
+    doc.text("Baby Growth Report", 14, yPosition);
+    
+    // Horizontal line
+    doc.setLineWidth(0.5);
+    doc.line(14, yPosition + 3, 196, yPosition + 3);
+    yPosition += 15;
+
+    // Baby Information Section
     if (profile) {
-      doc.setFontSize(12);
-      doc.text(`Baby Name: ${profile.babyName}`, 14, 35);
-      doc.text(`Birth Date: ${format(new Date(profile.birthDate), "MMMM dd, yyyy")}`, 14, 42);
-      doc.text(`Gender: ${profile.gender}`, 14, 49);
+      doc.setFontSize(16);
+      doc.setFont("helvetica", "bold");
+      doc.text("Baby Information", 14, yPosition);
+      yPosition += 8;
+
+      doc.setFontSize(11);
+      doc.setFont("helvetica", "normal");
+      
+      // Calculate age
+      const birthDate = new Date(profile.birthDate);
+      const today = new Date();
+      const ageInMonths = Math.floor((today.getTime() - birthDate.getTime()) / (1000 * 60 * 60 * 24 * 30.44));
+      const years = Math.floor(ageInMonths / 12);
+      const months = ageInMonths % 12;
+      const ageText = years > 0 ? `${years} year${years > 1 ? 's' : ''} ${months} month${months !== 1 ? 's' : ''}` : `${months} month${months !== 1 ? 's' : ''}`;
+
+      doc.text(`Name: ${profile.babyName}`, 14, yPosition);
+      yPosition += 6;
+      doc.text(`Birth Date: ${format(new Date(profile.birthDate), "MMMM dd, yyyy")}`, 14, yPosition);
+      yPosition += 6;
+      doc.text(`Age: ${ageText}`, 14, yPosition);
+      yPosition += 6;
+      doc.text(`Gender: ${profile.gender}`, 14, yPosition);
+      yPosition += 6;
+      
+      if (profile.bloodGroup) {
+        doc.text(`Blood Group: ${profile.bloodGroup}`, 14, yPosition);
+        yPosition += 6;
+      }
+      
+      if (profile.contactNumber) {
+        doc.text(`Contact Number: ${profile.contactNumber}`, 14, yPosition);
+        yPosition += 6;
+      }
+      
+      yPosition += 4;
     }
 
-    doc.setFontSize(14);
-    doc.text("Growth Records", 14, 62);
+    // Growth Summary Section
+    if (sortedRecords.length > 0) {
+      doc.setFontSize(16);
+      doc.setFont("helvetica", "bold");
+      doc.text("Growth Summary", 14, yPosition);
+      yPosition += 8;
+
+      const latestRecord = sortedRecords[0];
+      const oldestRecord = sortedRecords[sortedRecords.length - 1];
+      const heightGrowth = latestRecord.height - oldestRecord.height;
+      const weightGrowth = (latestRecord.weight - oldestRecord.weight) / 1000;
+
+      doc.setFontSize(11);
+      doc.setFont("helvetica", "normal");
+      doc.text(`Latest Measurement (${format(new Date(latestRecord.date), "MMM dd, yyyy")}):`, 14, yPosition);
+      yPosition += 6;
+      doc.text(`  Height: ${latestRecord.height} cm`, 14, yPosition);
+      yPosition += 6;
+      doc.text(`  Weight: ${(latestRecord.weight / 1000).toFixed(1)} kg`, 14, yPosition);
+      yPosition += 8;
+
+      if (sortedRecords.length > 1) {
+        doc.text(`Growth Progress (since ${format(new Date(oldestRecord.date), "MMM dd, yyyy")}):`, 14, yPosition);
+        yPosition += 6;
+        doc.text(`  Height: ${heightGrowth > 0 ? '+' : ''}${heightGrowth.toFixed(1)} cm`, 14, yPosition);
+        yPosition += 6;
+        doc.text(`  Weight: ${weightGrowth > 0 ? '+' : ''}${weightGrowth.toFixed(2)} kg`, 14, yPosition);
+        yPosition += 8;
+      }
+    }
+
+    // Growth Records Table
+    doc.setFontSize(16);
+    doc.setFont("helvetica", "bold");
+    doc.text("Detailed Growth Records", 14, yPosition);
+    yPosition += 6;
 
     const tableData = sortedRecords.map((record) => [
-      format(new Date(record.date), "MM/dd/yyyy"),
+      format(new Date(record.date), "MMM dd, yyyy"),
       `${record.height} cm`,
       `${(record.weight / 1000).toFixed(1)} kg`,
     ]);
 
     autoTable(doc, {
-      startY: 68,
+      startY: yPosition,
       head: [["Date", "Height", "Weight"]],
       body: tableData,
+      theme: 'striped',
+      headStyles: {
+        fillColor: [59, 130, 246],
+        fontSize: 11,
+        fontStyle: 'bold',
+      },
+      bodyStyles: {
+        fontSize: 10,
+      },
+      alternateRowStyles: {
+        fillColor: [245, 247, 250],
+      },
     });
+
+    // Footer
+    const finalY = (doc as any).lastAutoTable.finalY || yPosition + 20;
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "italic");
+    doc.setTextColor(128, 128, 128);
+    doc.text(`Report generated on ${format(new Date(), "MMMM dd, yyyy 'at' hh:mm a")}`, 14, finalY + 15);
+    doc.text("Total Records: " + sortedRecords.length, 14, finalY + 20);
 
     doc.save(`${profile?.babyName || "baby"}-growth-report.pdf`);
 
     toast({
       title: "PDF Generated!",
-      description: "Your growth report has been downloaded.",
+      description: "Your comprehensive growth report has been downloaded.",
     });
   };
 

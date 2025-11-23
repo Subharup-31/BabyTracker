@@ -80,3 +80,25 @@ export const chatMessageSchema = z.object({
 
 export type InsertChatMessage = z.infer<typeof insertChatMessageSchema>;
 export type ChatMessage = z.infer<typeof chatMessageSchema>;
+
+// Feedback schema for Supabase
+export const insertFeedbackSchema = z.object({
+  userId: z.string(),
+  name: z.string().min(1, "Name is required"),
+  email: z.string().email("Valid email is required"),
+  rating: z.number().min(1).max(5),
+  message: z.string().min(1, "Message is required"),
+});
+
+export const feedbackSchema = z.object({
+  id: z.string(),
+  userId: z.string(),
+  name: z.string(),
+  email: z.string(),
+  rating: z.number(),
+  message: z.string(),
+  createdAt: z.string(),
+});
+
+export type InsertFeedback = z.infer<typeof insertFeedbackSchema>;
+export type Feedback = z.infer<typeof feedbackSchema>;

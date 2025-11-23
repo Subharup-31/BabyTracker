@@ -138,6 +138,42 @@ export function registerAdminRoutes(app: Express) {
     }
   });
 
+  // Get all feedbacks (admin only)
+  app.get("/api/admin/feedbacks", requireAdmin, async (req, res) => {
+    try {
+      console.log("💬 Fetching all feedbacks with service role key...");
+      
+      const { data, error } = await supabaseAdmin
+        .from('feedbacks')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('❌ Supabase error fetching feedbacks:', error);
+        throw error;
+      }
+
+      console.log(`✅ Admin fetched ${data?.length || 0} feedbacks`);
+
+      // Map to camelCase
+      const feedbacks = data?.map(feedback => ({
+        id: feedback.id,
+        userId: feedback.user_id,
+        name: feedback.name,
+        email: feedback.email,
+        rating: feedback.rating,
+        message: feedback.message,
+        createdAt: feedback.created_at,
+      })) || [];
+
+      console.log("📤 Sending", feedbacks.length, "feedbacks to frontend");
+      res.json(feedbacks);
+    } catch (error: any) {
+      console.error('❌ Admin feedbacks list error:', error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   // Check if current user is admin
   app.get("/api/admin/check", async (req, res) => {
     try {

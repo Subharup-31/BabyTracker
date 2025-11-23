@@ -7,8 +7,10 @@ import {
   type InsertGrowthRecord,
   type ChatMessage,
   type InsertChatMessage,
+  type Feedback,
+  type InsertFeedback,
 } from "@shared/schema";
-import { supabase } from "./db";
+import { supabase, supabaseAdmin } from "./db";
 
 export interface IStorage {
   getBabyProfile(userId: string): Promise<BabyProfile | undefined>;
@@ -28,6 +30,10 @@ export interface IStorage {
 
   getChatMessages(userId: string): Promise<ChatMessage[]>;
   createChatMessage(message: InsertChatMessage): Promise<ChatMessage>;
+
+  createFeedback(feedback: InsertFeedback): Promise<Feedback>;
+  getUserFeedbacks(userId: string): Promise<Feedback[]>;
+  getAllFeedbacks(): Promise<Feedback[]>;
 }
 
 export class MemStorage implements IStorage {
@@ -151,6 +157,24 @@ export class MemStorage implements IStorage {
     this.chatMessages.set(id, message);
     return message as ChatMessage;
   }
+
+  async createFeedback(insertFeedback: InsertFeedback): Promise<Feedback> {
+    const id = Math.random().toString(36).substring(2, 15);
+    const feedback: Feedback = {
+      ...insertFeedback,
+      id,
+      createdAt: new Date().toISOString(),
+    };
+    return feedback;
+  }
+
+  async getUserFeedbacks(userId: string): Promise<Feedback[]> {
+    return [];
+  }
+
+  async getAllFeedbacks(): Promise<Feedback[]> {
+    return [];
+  }
 }
 
 export class DatabaseStorage implements IStorage {
@@ -245,7 +269,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getVaccines(userId: string): Promise<Vaccine[]> {
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('vaccines')
       .select('*')
       .eq('user_id', userId);
@@ -265,7 +289,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getVaccine(id: string): Promise<Vaccine | undefined> {
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('vaccines')
       .select('*')
       .eq('id', id)
@@ -297,7 +321,7 @@ export class DatabaseStorage implements IStorage {
       status: insertVaccine.status,
     };
 
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('vaccines')
       .insert(dbVaccine)
       .select()
@@ -328,7 +352,7 @@ export class DatabaseStorage implements IStorage {
     if (updates.dueDate !== undefined) dbUpdates.due_date = updates.dueDate;
     if (updates.status !== undefined) dbUpdates.status = updates.status;
 
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('vaccines')
       .update(dbUpdates)
       .eq('id', id)
@@ -355,7 +379,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteVaccine(id: string, userId: string): Promise<void> {
-    const { error } = await supabase
+    const { error } = await supabaseAdmin
       .from('vaccines')
       .delete()
       .eq('id', id)
@@ -367,7 +391,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getGrowthRecords(userId: string): Promise<GrowthRecord[]> {
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('growth_records')
       .select('*')
       .eq('user_id', userId);
@@ -395,7 +419,7 @@ export class DatabaseStorage implements IStorage {
       weight: insertRecord.weight,
     };
 
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('growth_records')
       .insert(dbRecord)
       .select()
@@ -426,7 +450,7 @@ export class DatabaseStorage implements IStorage {
     if (updates.height !== undefined) dbUpdates.height = updates.height;
     if (updates.weight !== undefined) dbUpdates.weight = updates.weight;
 
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('growth_records')
       .update(dbUpdates)
       .eq('id', id)
@@ -453,7 +477,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteGrowthRecord(id: string, userId: string): Promise<void> {
-    const { error } = await supabase
+    const { error } = await supabaseAdmin
       .from('growth_records')
       .delete()
       .eq('id', id)
@@ -465,7 +489,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getChatMessages(userId: string): Promise<ChatMessage[]> {
-    const { data, error } = await supabase
+    const { data, error} = await supabaseAdmin
       .from('chat_messages')
       .select('*')
       .eq('user_id', userId)
@@ -493,7 +517,7 @@ export class DatabaseStorage implements IStorage {
       content: insertMessage.content,
     };
 
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('chat_messages')
       .insert(dbMessage)
       .select()
@@ -511,6 +535,90 @@ export class DatabaseStorage implements IStorage {
       content: data.content,
       timestamp: data.timestamp,
     };
+  }
+
+  async createFeedback(insertFeedback: InsertFeedback): Promise<Feedback> {
+    console.log('📝 Creating feedback with data:', insertFeedback);
+    
+    const dbFeedback = {
+      user_id: insertFeedback.userId,
+      name: insertFeedback.name,
+      email: insertFeedback.email,
+      rating: insertFeedback.rating,
+      message: insertFeedback.message,
+    };
+
+    console.log('📝 Database feedback object:', dbFeedback);
+
+    // Use supabaseAdmin to bypass RLS for feedback creation
+    const { data, error } = await supabaseAdmin
+      .from('feedbacks')
+      .insert(dbFeedback)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('❌ Feedback creation error:', error);
+      console.error('❌ Error details:', JSON.stringify(error, null, 2));
+      throw new Error(`Error creating feedback: ${error.message} - ${error.details || ''} - ${error.hint || ''}`);
+    }
+
+    console.log('✅ Feedback created successfully:', data);
+
+    return {
+      id: data.id,
+      userId: data.user_id,
+      name: data.name,
+      email: data.email,
+      rating: data.rating,
+      message: data.message,
+      createdAt: data.created_at,
+    };
+  }
+
+  async getUserFeedbacks(userId: string): Promise<Feedback[]> {
+    // Use supabaseAdmin to bypass RLS
+    const { data, error } = await supabaseAdmin
+      .from('feedbacks')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      throw new Error(`Error fetching user feedbacks: ${error.message}`);
+    }
+
+    return data.map(f => ({
+      id: f.id,
+      userId: f.user_id,
+      name: f.name,
+      email: f.email,
+      rating: f.rating,
+      message: f.message,
+      createdAt: f.created_at,
+    }));
+  }
+
+  async getAllFeedbacks(): Promise<Feedback[]> {
+    // Use supabaseAdmin to bypass RLS
+    const { data, error } = await supabaseAdmin
+      .from('feedbacks')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      throw new Error(`Error fetching all feedbacks: ${error.message}`);
+    }
+
+    return data.map(f => ({
+      id: f.id,
+      userId: f.user_id,
+      name: f.name,
+      email: f.email,
+      rating: f.rating,
+      message: f.message,
+      createdAt: f.created_at,
+    }));
   }
 }
 

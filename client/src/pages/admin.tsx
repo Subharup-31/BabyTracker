@@ -2,8 +2,10 @@ import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Users, Baby, Syringe, TrendingUp, Calendar, LogOut } from "lucide-react";
+import { Users, Baby, Syringe, TrendingUp, Calendar, LogOut, MessageSquare, Star } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 
 interface AdminStats {
@@ -25,11 +27,22 @@ interface BabyProfile {
   createdAt: string;
 }
 
+interface Feedback {
+  id: string;
+  userId: string;
+  name: string;
+  email: string;
+  rating: number;
+  message: string;
+  createdAt: string;
+}
+
 export default function AdminPage() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [babies, setBabies] = useState<BabyProfile[]>([]);
+  const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
 
@@ -97,6 +110,18 @@ export default function AdminPage() {
       if (babiesResponse.ok) {
         const babiesData = await babiesResponse.json();
         setBabies(babiesData);
+      }
+
+      // Fetch feedbacks
+      const feedbacksResponse = await fetch("/api/admin/feedbacks", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (feedbacksResponse.ok) {
+        const feedbacksData = await feedbacksResponse.json();
+        setFeedbacks(feedbacksData);
       }
     } catch (error) {
       console.error("Error fetching admin data:", error);
@@ -224,47 +249,112 @@ export default function AdminPage() {
         </div>
       )}
 
-      {/* Babies List */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Registered Babies</CardTitle>
-          <CardDescription>All baby profiles in the system</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {babies.length === 0 ? (
-            <p className="text-center text-muted-foreground py-8">No babies registered yet</p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left p-2 font-medium">Baby Name</th>
-                    <th className="text-left p-2 font-medium">Age</th>
-                    <th className="text-left p-2 font-medium">Gender</th>
-                    <th className="text-left p-2 font-medium">Blood Group</th>
-                    <th className="text-left p-2 font-medium">Contact</th>
-                    <th className="text-left p-2 font-medium">Registered</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {babies.map((baby) => (
-                    <tr key={baby.id} className="border-b hover:bg-muted/50">
-                      <td className="p-2 font-medium">{baby.babyName}</td>
-                      <td className="p-2">{calculateAge(baby.birthDate)}</td>
-                      <td className="p-2 capitalize">{baby.gender}</td>
-                      <td className="p-2">{baby.bloodGroup || "-"}</td>
-                      <td className="p-2">{baby.contactNumber || "-"}</td>
-                      <td className="p-2 text-sm text-muted-foreground">
-                        {new Date(baby.createdAt).toLocaleDateString()}
-                      </td>
-                    </tr>
+      {/* Tabs for Babies and Feedbacks */}
+      <Tabs defaultValue="babies" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="babies" className="gap-2">
+            <Baby className="w-4 h-4" />
+            Babies
+          </TabsTrigger>
+          <TabsTrigger value="feedbacks" className="gap-2">
+            <MessageSquare className="w-4 h-4" />
+            Feedbacks
+            {feedbacks.length > 0 && (
+              <Badge variant="secondary" className="ml-1">{feedbacks.length}</Badge>
+            )}
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="babies">
+          <Card>
+            <CardHeader>
+              <CardTitle>Registered Babies</CardTitle>
+              <CardDescription>All baby profiles in the system</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {babies.length === 0 ? (
+                <p className="text-center text-muted-foreground py-8">No babies registered yet</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b">
+                        <th className="text-left p-2 font-medium">Baby Name</th>
+                        <th className="text-left p-2 font-medium">Age</th>
+                        <th className="text-left p-2 font-medium">Gender</th>
+                        <th className="text-left p-2 font-medium">Blood Group</th>
+                        <th className="text-left p-2 font-medium">Contact</th>
+                        <th className="text-left p-2 font-medium">Registered</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {babies.map((baby) => (
+                        <tr key={baby.id} className="border-b hover:bg-muted/50">
+                          <td className="p-2 font-medium">{baby.babyName}</td>
+                          <td className="p-2">{calculateAge(baby.birthDate)}</td>
+                          <td className="p-2 capitalize">{baby.gender}</td>
+                          <td className="p-2">{baby.bloodGroup || "-"}</td>
+                          <td className="p-2">{baby.contactNumber || "-"}</td>
+                          <td className="p-2 text-sm text-muted-foreground">
+                            {new Date(baby.createdAt).toLocaleDateString()}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="feedbacks">
+          <Card>
+            <CardHeader>
+              <CardTitle>User Feedbacks</CardTitle>
+              <CardDescription>All feedback submissions from users</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {feedbacks.length === 0 ? (
+                <p className="text-center text-muted-foreground py-8">No feedback received yet</p>
+              ) : (
+                <div className="space-y-4">
+                  {feedbacks.map((feedback) => (
+                    <Card key={feedback.id} className="border-l-4 border-l-primary">
+                      <CardHeader>
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <CardTitle className="text-base">{feedback.name}</CardTitle>
+                            <CardDescription className="text-sm">{feedback.email}</CardDescription>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            {[...Array(5)].map((_, i) => (
+                              <Star
+                                key={i}
+                                className={`w-4 h-4 ${
+                                  i < feedback.rating
+                                    ? "fill-yellow-400 text-yellow-400"
+                                    : "text-gray-300"
+                                }`}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-sm text-foreground mb-2">{feedback.message}</p>
+                        <p className="text-xs text-muted-foreground">
+                          Submitted on {new Date(feedback.createdAt).toLocaleString()}
+                        </p>
+                      </CardContent>
+                    </Card>
                   ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

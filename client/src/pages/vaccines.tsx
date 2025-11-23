@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Calendar, Plus, Edit, Trash2, CheckCircle } from "lucide-react";
+import { Calendar, Plus, Edit, Trash2, CheckCircle, CalendarPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,11 +12,12 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Vaccine, insertVaccineSchema } from "@shared/schema";
 import { z } from "zod";
-import { format, isBefore, isToday } from "date-fns";
+import { format, isBefore, isToday, addMonths } from "date-fns";
 
 const vaccineFormSchema = insertVaccineSchema.extend({
   dueDate: z.string().min(1, "Due date is required"),
@@ -28,6 +29,7 @@ export default function VaccinesPage() {
   const { toast } = useToast();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingVaccine, setEditingVaccine] = useState<Vaccine | null>(null);
+  const [createNextDose, setCreateNextDose] = useState(true);
 
   const { data: vaccines = [], isLoading } = useQuery<Vaccine[]>({
     queryKey: ["/api/vaccines"],
@@ -95,11 +97,41 @@ export default function VaccinesPage() {
     setIsDialogOpen(true);
   };
 
-  const handleMarkComplete = (vaccine: Vaccine) => {
+  const handleMarkComplete = async (vaccine: Vaccine) => {
+    // Mark current vaccine as completed
     updateMutation.mutate({
       id: vaccine.id,
       data: { status: "Completed" },
     });
+
+    // Create next dose automatically (1 month later)
+    if (createNextDose) {
+      const nextDueDate = addMonths(new Date(vaccine.dueDate), 1);
+      const nextDoseName = vaccine.vaccineName.includes("(Dose") 
+        ? vaccine.vaccineName.replace(/\(Dose \d+\)/, (match) => {
+            const doseNum = parseInt(match.match(/\d+/)?.[0] || "1");
+            return `(Dose ${doseNum + 1})`;
+          })
+        : `${vaccine.vaccineName} (Dose 2)`;
+
+      try {
+        await apiRequest("POST", "/api/vaccines", {
+          vaccineName: nextDoseName,
+          dueDate: nextDueDate.toISOString().split("T")[0],
+          status: "Pending",
+          userId: vaccine.userId,
+        });
+        
+        toast({
+          title: "Next dose scheduled!",
+          description: `${nextDoseName} scheduled for ${format(nextDueDate, "MMMM dd, yyyy")}`,
+        });
+        
+        queryClient.invalidateQueries({ queryKey: ["/api/vaccines"] });
+      } catch (error) {
+        console.error("Failed to create next dose:", error);
+      }
+    }
   };
 
   const getStatusBadge = (vaccine: Vaccine) => {
@@ -124,23 +156,62 @@ export default function VaccinesPage() {
     return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
   });
 
+  const addToGoogleCalendar = (vaccine: Vaccine) => {
+    const startDate = new Date(vaccine.dueDate);
+    const endDate = new Date(startDate);
+    endDate.setHours(startDate.getHours() + 1); // 1 hour duration
+
+    // Format dates for Google Calendar (YYYYMMDDTHHmmss)
+    const formatGoogleDate = (date: Date) => {
+      return date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+    };
+
+    const title = encodeURIComponent(`Vaccine: ${vaccine.vaccineName}`);
+    const details = encodeURIComponent(`Vaccine appointment for ${vaccine.vaccineName}. Don't forget to bring your baby's vaccination card!`);
+    const location = encodeURIComponent('Pediatric Clinic');
+    const dates = `${formatGoogleDate(startDate)}/${formatGoogleDate(endDate)}`;
+
+    const googleCalendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&details=${details}&location=${location}&dates=${dates}`;
+
+    window.open(googleCalendarUrl, '_blank');
+    
+    toast({
+      title: "Opening Google Calendar",
+      description: "Add this vaccine appointment to your calendar",
+    });
+  };
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
           <h1 className="text-3xl font-bold font-[Poppins] text-foreground">Vaccine Tracker</h1>
           <p className="text-muted-foreground mt-1">
             Keep track of your baby's vaccination schedule
           </p>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={() => { setEditingVaccine(null); form.reset(); }} data-testid="button-add-vaccine">
-              <Plus className="w-4 h-4 mr-2" />
-              Add Vaccine
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
+        <div className="flex items-center gap-4">
+          <div className="flex items-center space-x-2">
+            <Checkbox 
+              id="auto-next-dose" 
+              checked={createNextDose}
+              onCheckedChange={(checked) => setCreateNextDose(checked as boolean)}
+            />
+            <label
+              htmlFor="auto-next-dose"
+              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+            >
+              Auto-schedule next dose
+            </label>
+          </div>
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button onClick={() => { setEditingVaccine(null); form.reset(); }} data-testid="button-add-vaccine">
+                <Plus className="w-4 h-4 mr-2" />
+                Add Vaccine
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
             <DialogHeader>
               <DialogTitle className="font-[Poppins]">
                 {editingVaccine ? "Edit Vaccine" : "Add New Vaccine"}
@@ -213,6 +284,7 @@ export default function VaccinesPage() {
             </Form>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       {isLoading ? (
@@ -243,28 +315,29 @@ export default function VaccinesPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="flex gap-2">
-                  {vaccine.status !== "Completed" && (
+                <div className="flex flex-col gap-2">
+                  <div className="flex gap-2">
+                    {vaccine.status !== "Completed" && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleMarkComplete(vaccine)}
+                        className="flex-1"
+                        data-testid={`button-complete-${vaccine.id}`}
+                      >
+                        <CheckCircle className="w-4 h-4 mr-1" />
+                        Complete
+                      </Button>
+                    )}
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => handleMarkComplete(vaccine)}
-                      className="flex-1"
-                      data-testid={`button-complete-${vaccine.id}`}
+                      onClick={() => handleEdit(vaccine)}
+                      data-testid={`button-edit-${vaccine.id}`}
                     >
-                      <CheckCircle className="w-4 h-4 mr-1" />
-                      Complete
+                      <Edit className="w-4 h-4" />
                     </Button>
-                  )}
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleEdit(vaccine)}
-                    data-testid={`button-edit-${vaccine.id}`}
-                  >
-                    <Edit className="w-4 h-4" />
-                  </Button>
-                  <AlertDialog>
+                    <AlertDialog>
                     <AlertDialogTrigger asChild>
                       <Button size="sm" variant="outline" data-testid={`button-delete-${vaccine.id}`}>
                         <Trash2 className="w-4 h-4" />
@@ -288,6 +361,19 @@ export default function VaccinesPage() {
                       </AlertDialogFooter>
                     </AlertDialogContent>
                   </AlertDialog>
+                  </div>
+                  {vaccine.status !== "Completed" && (
+                    <Button
+                      size="sm"
+                      variant="default"
+                      onClick={() => addToGoogleCalendar(vaccine)}
+                      className="w-full"
+                      data-testid={`button-calendar-${vaccine.id}`}
+                    >
+                      <CalendarPlus className="w-4 h-4 mr-2" />
+                      Add to Google Calendar
+                    </Button>
+                  )}
                 </div>
               </CardContent>
             </Card>

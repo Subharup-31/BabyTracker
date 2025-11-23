@@ -14,6 +14,7 @@ import ProfilePage from "@/pages/profile";
 import VaccinesPage from "@/pages/vaccines";
 import GrowthPage from "@/pages/growth";
 import ChatPage from "@/pages/chat";
+import FeedbackPage from "@/pages/feedback";
 import AdminPage from "@/pages/admin";
 import NotFound from "@/pages/not-found";
 
@@ -60,6 +61,14 @@ function Router() {
         <ProtectedRoute>
           <AppLayout>
             <ChatPage />
+          </AppLayout>
+        </ProtectedRoute>
+      </Route>
+      
+      <Route path="/feedback">
+        <ProtectedRoute>
+          <AppLayout>
+            <FeedbackPage />
           </AppLayout>
         </ProtectedRoute>
       </Route>

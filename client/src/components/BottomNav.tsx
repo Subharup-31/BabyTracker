@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { Home, User, Calendar, TrendingUp, MessageCircle } from "lucide-react";
+import { Home, User, Calendar, TrendingUp, MessageCircle, MessageSquare } from "lucide-react";
 
 export function BottomNav() {
   const [location] = useLocation();
@@ -9,6 +9,7 @@ export function BottomNav() {
     { href: "/vaccines", icon: Calendar, label: "Vaccines", testId: "nav-vaccines" },
     { href: "/growth", icon: TrendingUp, label: "Growth", testId: "nav-growth" },
     { href: "/chat", icon: MessageCircle, label: "Chat", testId: "nav-chat" },
+    { href: "/feedback", icon: MessageSquare, label: "Feedback", testId: "nav-feedback" },
   ];
 
   return (

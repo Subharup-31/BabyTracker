@@ -2,6 +2,8 @@ import "dotenv/config";
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { startVaccineReminderScheduler } from "./vaccine-reminder";
+import { testEmailConnection } from "./email";
 
 const app = express();
 
@@ -48,6 +50,12 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // Test email connection
+  await testEmailConnection();
+  
+  // Start vaccine reminder scheduler
+  startVaccineReminderScheduler();
+  
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
